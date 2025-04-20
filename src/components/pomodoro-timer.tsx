@@ -132,16 +132,21 @@ export function PomodoroTimer() {
         </div>
 
         <div className="flex justify-center space-x-4">
-          {/* Only show skip button if timer is running */}
-          
-          <Button size="lg" onClick={toggleTimer} className="rounded-none text-lg font-bold w-50 transition-colors duration-200 ease-in-out">
-            {isRunning ? "Pause" : "Start"}
-          </Button>
-          {isRunning && (
-            <Button variant="outline" size="icon" onClick={handleSkip}>
-              <SkipForward className=" absoluteh-5 w-5" />
+          <div className="relative">
+            <Button size="lg" onClick={toggleTimer} className="rounded-none text-lg font-bold w-50 transition-colors duration-200 ease-in-out">
+              {isRunning ? "Pause" : "Start"}
             </Button>
-          )}
+            {isRunning && (
+              <Button 
+                variant="outline" 
+                size="icon" 
+                onClick={handleSkip}
+                className="absolute -right-12 top-1/2 -translate-y-1/2"
+              >
+                <SkipForward className="h-5 w-5" />
+              </Button>
+            )}
+          </div>
         </div>
       </div>
     </div>
