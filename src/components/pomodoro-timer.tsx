@@ -8,70 +8,36 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { useTimerStore } from "@/lib/store/timer"
 import { toast } from "sonner"
 import { formatTime } from "@/lib/utils"
+import type { TimerMode } from "@/lib/store/timer"
 
 export function PomodoroTimer() {
-  const { 
-    mode, 
-    isRunning, 
-    timeLeft, 
-    setMode, 
-    toggleTimer, 
-    settings, 
-    completedPomodoros, 
-    incrementCompletedPomodoros,
-    addFocusTime 
-  } = useTimerStore()
-
-  // Function to determine the next break type based on completed pomodoros
-  const determineNextBreakType = () => {
-    const isLongBreakDue = (completedPomodoros + 1) % settings.longBreakInterval === 0
-    return isLongBreakDue ? "longBreak" : "shortBreak"
-  }
-
-  // Function to track focus time
-  const trackFocusTime = async (seconds: number) => {
-    try {
-      // Update local state first
-      addFocusTime(seconds)
-      
-      // Then update the database
-      await fetch("/api/stats", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ focusTime: seconds }),
-      })
-    } catch (error) {
-      console.error("Failed to save focus time:", error)
-      toast.error("Failed to save your progress")
-    }
-  }
+  const { mode, isRunning, timeLeft, setMode, toggleTimer, settings, completedPomodoros, incrementCompletedPomodoros } = useTimerStore()
 
   const handleSkip = async () => {
     // Track focus time when skipping pomodoro
-    if (mode === "pomodoro" && timeLeft < settings.pomodoroTime * 60) {
+    if (mode === "pomodoro") {
       const initialTime = settings.pomodoroTime * 60
       const focusTime = initialTime - timeLeft
-      
-      // Only track if actual focus time occurred
-      if (focusTime > 0) {
-        await trackFocusTime(focusTime)
-      }
-      
-      // Increment completed pomodoros when skipping a pomodoro session
-      incrementCompletedPomodoros()
+      // Send focus time, but don't wait for it
+      fetch("/api/stats", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ focusTime }),
+      }).catch(console.error) // Log error if fetch fails
     }
 
     // Determine next mode
-    let nextMode: "pomodoro" | "shortBreak" | "longBreak"
-    
+    let nextMode: TimerMode = "pomodoro" // Default if skipping a break
     if (mode === "pomodoro") {
-      nextMode = determineNextBreakType()
-    } else {
-      nextMode = "pomodoro"
+      // Increment first, then check
+      incrementCompletedPomodoros()
+      const currentCompleted = useTimerStore.getState().completedPomodoros // Get updated count
+      const shouldTakeLongBreak = currentCompleted > 0 && settings.longBreakInterval > 0 && currentCompleted % settings.longBreakInterval === 0
+      nextMode = shouldTakeLongBreak ? "longBreak" : "shortBreak"
     }
 
     await setMode(nextMode)
-    toast.success(`Switched to ${nextMode === "pomodoro" ? "Focus Time" : nextMode === "shortBreak" ? "Short Break" : "Long Break"}`)
+    toast.success("Timer skipped")
   }
 
   useEffect(() => {
@@ -80,28 +46,40 @@ export function PomodoroTimer() {
     const handleTimerEnd = async () => {
       useTimerStore.setState({ isRunning: false })
 
-      // Track focus time when pomodoro ends
+      let nextModeDetermined: TimerMode | null = null;
+
+      // Track focus time and determine next mode when pomodoro ends
       if (mode === "pomodoro") {
         const initialTime = settings.pomodoroTime * 60
-        await trackFocusTime(initialTime)
-        incrementCompletedPomodoros()
+        const focusTime = initialTime
+        // Send focus time, but don't wait for it
+        fetch("/api/stats", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ focusTime }),
+        }).catch(console.error) // Log error if fetch fails
         
-        // Show notification when pomodoro ends
-        toast.success("Pomodoro completed! Take a break.")
-        
-        // Auto start next break timer based on settings
-        if (settings.autoStartBreaks) {
-          const nextBreakMode = determineNextBreakType()
-          await setMode(nextBreakMode)
-          useTimerStore.setState({ isRunning: true })
-        }
-      } else {
-        // Show notification when break ends
-        toast.success("Break time is over! Back to work.")
-        
-        // Auto start next pomodoro timer based on settings
-        if (settings.autoStartPomodoros) {
-          await setMode("pomodoro")
+        incrementCompletedPomodoros() // Increment first
+        const currentCompleted = useTimerStore.getState().completedPomodoros // Get updated count
+        const shouldTakeLongBreak = currentCompleted > 0 && settings.longBreakInterval > 0 && currentCompleted % settings.longBreakInterval === 0
+        nextModeDetermined = shouldTakeLongBreak ? "longBreak" : "shortBreak";
+      } else { // Break ended
+        nextModeDetermined = "pomodoro"
+      }
+
+      // Show notification when timer ends
+      const message = mode === "pomodoro" 
+        ? "Pomodoro completed! Take a break." 
+        : "Break time is over! Back to work."
+      toast.success(message)
+
+      // Auto start next timer based on settings or just set the mode
+      const shouldAutoStart = (mode === "pomodoro" && settings.autoStartBreaks) ||
+                              ((mode === "shortBreak" || mode === "longBreak") && settings.autoStartPomodoros);
+
+      if (nextModeDetermined) {
+        await setMode(nextModeDetermined)
+        if (shouldAutoStart) {
           useTimerStore.setState({ isRunning: true })
         }
       }
@@ -120,7 +98,8 @@ export function PomodoroTimer() {
     return () => {
       if (interval) clearInterval(interval)
     }
-  }, [isRunning, timeLeft, mode, settings, setMode, completedPomodoros])
+  // Dependencies now correctly include all used state and functions from the store
+  }, [isRunning, timeLeft, mode, settings, setMode, completedPomodoros, incrementCompletedPomodoros, toggleTimer]) 
 
   return (
     <div className="shadow-lg">
@@ -128,13 +107,20 @@ export function PomodoroTimer() {
         <Tabs
           defaultValue="pomodoro"
           value={mode}
-          onValueChange={async (value) => await setMode(value as "pomodoro" | "shortBreak" | "longBreak")}
+          // Prevent changing mode while timer is running to avoid complications
+          onValueChange={async (value) => {
+             if (!isRunning) {
+               await setMode(value as TimerMode)
+             } else {
+               toast.warning("Please pause the timer before switching modes.")
+             }
+          }}
           className="mb-6"
         >
           <TabsList className="grid grid-cols-3 w-full">
-            <TabsTrigger value="pomodoro">Pomodoro</TabsTrigger>
-            <TabsTrigger value="shortBreak">Short Break</TabsTrigger>
-            <TabsTrigger value="longBreak">Long Break</TabsTrigger>
+            <TabsTrigger value="pomodoro" disabled={isRunning && mode !== 'pomodoro'}>Pomodoros</TabsTrigger>
+            <TabsTrigger value="shortBreak" disabled={isRunning && mode !== 'shortBreak'}>Short Break</TabsTrigger>
+            <TabsTrigger value="longBreak" disabled={isRunning && mode !== 'longBreak'}>Long Break</TabsTrigger>
           </TabsList>
           <TabsContent value="pomodoro" className="mt-0"></TabsContent>
           <TabsContent value="shortBreak" className="mt-0"></TabsContent>
@@ -146,9 +132,12 @@ export function PomodoroTimer() {
         </div>
 
         <div className="flex justify-center space-x-4">
-          <Button variant="outline" size="icon" onClick={handleSkip}>
-            <SkipForward className="h-5 w-5" />
-          </Button>
+          {/* Only show skip button if timer is running */}
+          {isRunning && (
+            <Button variant="outline" size="icon" onClick={handleSkip}>
+              <SkipForward className="h-5 w-5" />
+            </Button>
+          )}
           <Button size="lg" onClick={toggleTimer}>
             {isRunning ? <Pause className="mr-2 h-5 w-5" /> : <Play className="mr-2 h-5 w-5" />}
             {isRunning ? "Pause" : "Start"}
