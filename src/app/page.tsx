@@ -8,11 +8,11 @@ export default function Home() {
   return (
     <FullscreenContainer>
       <Navbar />
-      <div className="flex no-scrollbar flex-col min-h-screen items-center justify-center">
+      <div className="flex no-scrollbar flex-col max-h-screen overflow-hidden py-40 items-center justify-center">
         <PomodoroTimer/>
       </div>
       {/* <BottomBar /> */}
-      <Footer />
+      {/* <Footer /> */}
     </FullscreenContainer>
   );
 }

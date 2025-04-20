@@ -35,7 +35,7 @@ Focus is a minimalist productivity app that helps users maintain concentration a
    - Focus timer widget
    - Distraction-free environment
 
-3. **Focus Mode**
+3. **Focus Mode** [succes]
    - Pomodoro timer with three modes:
      - Pomodoro (default: 25 minutes)
      - Short Break (default: 5 minutes)
@@ -60,13 +60,13 @@ Focus is a minimalist productivity app that helps users maintain concentration a
 ### 4.1 Completed
 - [x] Supabase OAuth with Google integration
 - [x] Basic project setup with Next.js and Shadcn UI
-
-### 4.2 In Progress
 - [x] Pomodoro timer implementation with Zustand
 - [x] Timer settings UI and functionality
 - [x] Database schema and api for settings and timer
 - [x] Database integration for settings and timer
-- [ ] Full-screen mode implementation
+- [x] Full-screen mode implementation
+
+### 4.2 In Progress
 
 ## 5. Technical Implementation Details
 ### 5.1 Authentication
