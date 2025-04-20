@@ -2,7 +2,7 @@
 "use client"
 
 import { useEffect } from "react"
-import { Play, Pause, SkipForward } from "lucide-react"
+import {  SkipForward } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { useTimerStore } from "@/lib/store/timer"
@@ -117,7 +117,7 @@ export function PomodoroTimer() {
           }}
           className="mb-6"
         >
-          <TabsList className="grid grid-cols-3 w-full">
+          <TabsList className="grid grid-cols-3 w-full boorder-none bg-transparent">
             <TabsTrigger value="pomodoro" disabled={isRunning && mode !== 'pomodoro'}>Pomodoros</TabsTrigger>
             <TabsTrigger value="shortBreak" disabled={isRunning && mode !== 'shortBreak'}>Short Break</TabsTrigger>
             <TabsTrigger value="longBreak" disabled={isRunning && mode !== 'longBreak'}>Long Break</TabsTrigger>
@@ -128,20 +128,20 @@ export function PomodoroTimer() {
         </Tabs>
 
         <div className="text-center mb-8">
-          <span className="text-7xl font-bold">{formatTime(timeLeft)}</span>
+          <span className="text-9xl font-bold">{formatTime(timeLeft)}</span>
         </div>
 
         <div className="flex justify-center space-x-4">
           {/* Only show skip button if timer is running */}
-          {isRunning && (
-            <Button variant="outline" size="icon" onClick={handleSkip}>
-              <SkipForward className="h-5 w-5" />
-            </Button>
-          )}
-          <Button size="lg" onClick={toggleTimer}>
-            {isRunning ? <Pause className="mr-2 h-5 w-5" /> : <Play className="mr-2 h-5 w-5" />}
+          
+          <Button size="lg" onClick={toggleTimer} className="rounded-none text-lg font-bold w-50 transition-colors duration-200 ease-in-out">
             {isRunning ? "Pause" : "Start"}
           </Button>
+          {isRunning && (
+            <Button variant="outline" size="icon" onClick={handleSkip}>
+              <SkipForward className=" absoluteh-5 w-5" />
+            </Button>
+          )}
         </div>
       </div>
     </div>

@@ -62,10 +62,10 @@ Focus is a minimalist productivity app that helps users maintain concentration a
 - [x] Basic project setup with Next.js and Shadcn UI
 
 ### 4.2 In Progress
-- [ ] Pomodoro timer implementation with Zustand
-- [ ] Timer settings UI and functionality
-- [ ] Database schema and api for settings and timer
-- [ ] Database integration for settings and timer
+- [x] Pomodoro timer implementation with Zustand
+- [x] Timer settings UI and functionality
+- [x] Database schema and api for settings and timer
+- [x] Database integration for settings and timer
 - [ ] Full-screen mode implementation
 
 ## 5. Technical Implementation Details
