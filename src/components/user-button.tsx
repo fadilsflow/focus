@@ -1,15 +1,8 @@
 import {
     DropdownMenu,
     DropdownMenuContent,
-    DropdownMenuGroup,
-    DropdownMenuItem,
     DropdownMenuLabel,
-    DropdownMenuPortal,
     DropdownMenuSeparator,
-    DropdownMenuShortcut,
-    DropdownMenuSub,
-    DropdownMenuSubContent,
-    DropdownMenuSubTrigger,
     DropdownMenuTrigger,
   } from "@/components/ui/dropdown-menu"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
@@ -19,13 +12,13 @@ import { redirect } from "next/navigation"
 import { LogoutDropdown } from "./logout-button"
 export default async function UserButton() {
     const supabase = await createClient()
-    
-  const { data, error } = await supabase.auth.getUser()
+
+     const { data, error } = await supabase.auth.getUser()
     return (
         <DropdownMenu>
             <DropdownMenuTrigger>
                 <Avatar>
-                    <AvatarImage src="https://github.com/shadcn.png" />
+                    <AvatarImage src={data.user?.user_metadata.avatar_url} />
                     <AvatarFallback>CN</AvatarFallback>
                 </Avatar>
             </DropdownMenuTrigger>

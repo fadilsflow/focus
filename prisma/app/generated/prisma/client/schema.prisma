@@ -1,0 +1,41 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+generator client {
+  provider = "prisma-client-js"
+  output   = "app/generated/prisma/client"
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+model Stats {
+  id        String   @id @default(cuid())
+  userId    String
+  date      DateTime
+  focusTime Int      @default(0) // in seconds
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([userId, date])
+  @@index([userId])
+  @@index([date])
+}
+
+model Settings {
+  id                 String    @id @default(uuid())
+  userId             String    @unique
+  pomodoroTime       Int       @default(25)
+  shortBreakTime     Int       @default(5)
+  longBreakTime      Int       @default(15)
+  autoStartBreaks    Boolean   @default(false)
+  autoStartPomodoros Boolean   @default(false)
+  longBreakInterval  Int       @default(4)
+  createdAt          DateTime  @default(now())
+  updatedAt          DateTime? // Make it nullable initially
+}
