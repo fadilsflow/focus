@@ -102,8 +102,9 @@ export function PomodoroTimer() {
   }, [isRunning, timeLeft, mode, settings, setMode, completedPomodoros, incrementCompletedPomodoros, toggleTimer]) 
 
   return (
-    <div className="shadow-lg">
+    <div className="flex flex-col items-center justify-center max-w-2xl mx-auto">
       <div>
+
         <Tabs
           defaultValue="pomodoro"
           value={mode}

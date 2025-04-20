@@ -1,18 +1,12 @@
 import Navbar from "@/components/navbar";
-import Footer from "@/components/footer";
-import { PomodoroTimer } from "@/components/pomodoro-timer";
 import { FullscreenContainer } from "@/components/fullscreen-container";
-
+import { ModeContainer } from "@/components/mode-container";
 
 export default function Home() {
   return (
     <FullscreenContainer>
       <Navbar />
-      <div className="flex no-scrollbar flex-col max-h-screen overflow-hidden py-40 items-center justify-center">
-        <PomodoroTimer/>
-      </div>
-      {/* <BottomBar /> */}
-      {/* <Footer /> */}
+      <ModeContainer />
     </FullscreenContainer>
   );
 }
