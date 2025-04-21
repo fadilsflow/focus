@@ -1,8 +1,8 @@
 // src/components/pomodoro-timer.tsx
 "use client"
 
-import { useEffect } from "react"
-import {  SkipForward } from "lucide-react"
+import { useEffect, useRef } from "react"
+import { SkipForward } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { useTimerStore } from "@/lib/store/timer"
@@ -12,6 +12,7 @@ import type { TimerMode } from "@/lib/store/timer"
 
 export function PomodoroTimer() {
   const { mode, isRunning, timeLeft, setMode, toggleTimer, settings, completedPomodoros, incrementCompletedPomodoros } = useTimerStore()
+  const hasSentFocusTime = useRef(false)
 
   const handleSkip = async () => {
     // Track focus time when skipping pomodoro
@@ -37,7 +38,6 @@ export function PomodoroTimer() {
     }
 
     await setMode(nextMode)
-    toast.success("Timer skipped")
   }
 
   useEffect(() => {
@@ -48,23 +48,15 @@ export function PomodoroTimer() {
 
       let nextModeDetermined: TimerMode | null = null;
 
-      // Track focus time and determine next mode when pomodoro ends
+      // Determine next mode when pomodoro ends
       if (mode === "pomodoro") {
-        const initialTime = settings.pomodoroTime * 60
-        const focusTime = initialTime
-        // Send focus time, but don't wait for it
-        fetch("/api/stats", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ focusTime }),
-        }).catch(console.error) // Log error if fetch fails
-        
         incrementCompletedPomodoros() // Increment first
         const currentCompleted = useTimerStore.getState().completedPomodoros // Get updated count
         const shouldTakeLongBreak = currentCompleted > 0 && settings.longBreakInterval > 0 && currentCompleted % settings.longBreakInterval === 0
         nextModeDetermined = shouldTakeLongBreak ? "longBreak" : "shortBreak";
       } else { // Break ended
         nextModeDetermined = "pomodoro"
+        hasSentFocusTime.current = false // Reset the flag for the next pomodoro
       }
 
       // Show notification when timer ends
@@ -98,14 +90,31 @@ export function PomodoroTimer() {
     return () => {
       if (interval) clearInterval(interval)
     }
-  // Dependencies now correctly include all used state and functions from the store
-  }, [isRunning, timeLeft, mode, settings, setMode, completedPomodoros, incrementCompletedPomodoros, toggleTimer]) 
+  }, [isRunning, timeLeft, mode, settings, setMode, completedPomodoros, incrementCompletedPomodoros, toggleTimer])
+
+  // Separate effect for tracking focus time
+  useEffect(() => {
+    if (mode === "pomodoro" && timeLeft === 0 && !hasSentFocusTime.current) {
+      const initialTime = settings.pomodoroTime * 60
+      const focusTime = initialTime
+      
+      fetch("/api/stats", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ focusTime }),
+      }).catch(console.error)
+      
+      hasSentFocusTime.current = true
+    } else if (mode !== "pomodoro") {
+      hasSentFocusTime.current = false
+    }
+  }, [mode, timeLeft, settings.pomodoroTime])
 
   return (
-    <div className="flex flex-col items-center justify-center max-w-2xl mx-auto">
+    <div className="flex flex-col items-center justify-center mx-auto min-h-screen">
       <div>
-
         <Tabs
+
           defaultValue="pomodoro"
           value={mode}
           // Prevent changing mode while timer is running to avoid complications
@@ -118,7 +127,8 @@ export function PomodoroTimer() {
           }}
           className="mb-6"
         >
-          <TabsList className="grid grid-cols-3 w-full boorder-none bg-transparent">
+          {/* tabs list */}
+          <TabsList className="grid grid-cols-3 w-fit mx-auto bg-transparent">
             <TabsTrigger value="pomodoro" disabled={isRunning && mode !== 'pomodoro'}>Pomodoros</TabsTrigger>
             <TabsTrigger value="shortBreak" disabled={isRunning && mode !== 'shortBreak'}>Short Break</TabsTrigger>
             <TabsTrigger value="longBreak" disabled={isRunning && mode !== 'longBreak'}>Long Break</TabsTrigger>
@@ -128,23 +138,24 @@ export function PomodoroTimer() {
           <TabsContent value="longBreak" className="mt-0"></TabsContent>
         </Tabs>
 
-        <div className="text-center mb-8">
-          <span className="text-9xl font-bold">{formatTime(timeLeft)}</span>
+        {/* timer */}
+        <div className="text-center mb-8 ">
+          <span className="text-9xl font-sans font-light">{formatTime(timeLeft)}</span>
         </div>
 
         <div className="flex justify-center space-x-4">
           <div className="relative">
-            <Button size="lg" onClick={toggleTimer} className="rounded-none text-lg font-bold w-50 transition-colors duration-200 ease-in-out">
+            <Button size="lg" onClick={toggleTimer} className="rounded-full text-lg font-bold w-30 htransition-colors duration-200 ease-in-out">
               {isRunning ? "Pause" : "Start"}
             </Button>
             {isRunning && (
               <Button 
-                variant="outline" 
+                variant="secondary" 
                 size="icon" 
                 onClick={handleSkip}
-                className="absolute -right-12 top-1/2 -translate-y-1/2"
+                className="absolute -right-12 top-1/2 -translate-y-1/2 rounded-full"
               >
-                <SkipForward className="h-5 w-5" />
+                <SkipForward className="h-5 w-5 " />
               </Button>
             )}
           </div>
