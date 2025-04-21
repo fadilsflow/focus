@@ -1,5 +1,5 @@
 // src/components/pomodoro-timer.tsx
-"use client"
+
 
 import { useEffect, useRef } from "react"
 import { SkipForward } from "lucide-react"
@@ -9,15 +9,23 @@ import { useTimerStore } from "@/lib/store/timer"
 import { toast } from "sonner"
 import { formatTime } from "@/lib/utils"
 import type { TimerMode } from "@/lib/store/timer"
+import { createClient } from "@/lib/supabase/client"
 
 export function PomodoroTimer() {
   const { mode, isRunning, timeLeft, setMode, toggleTimer, settings, completedPomodoros, incrementCompletedPomodoros } = useTimerStore()
   const hasSentFocusTime = useRef(false)
-
+  
   const handleSkip = async () => {
-    // Track focus time when skipping pomodoro
-    if (mode === "pomodoro") {
-      const initialTime = settings.pomodoroTime * 60
+    const supabase = createClient()
+    const { data: { user } } = await supabase.auth.getUser()
+    const userid = user?.id
+    if (!userid) {
+      toast.error("Please login to save your focus time")
+      return
+    } else {
+      // Track focus time when skipping pomodoro
+      if (mode === "pomodoro") {
+        const initialTime = settings.pomodoroTime * 60
       const focusTime = initialTime - timeLeft
       // Send focus time, but don't wait for it
       fetch("/api/stats", {
@@ -25,6 +33,7 @@ export function PomodoroTimer() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ focusTime }),
       }).catch(console.error) // Log error if fetch fails
+      }
     }
 
     // Determine next mode
@@ -129,9 +138,9 @@ export function PomodoroTimer() {
         >
           {/* tabs list */}
           <TabsList className="grid grid-cols-3 w-fit mx-auto bg-transparent">
-            <TabsTrigger value="pomodoro" disabled={isRunning && mode !== 'pomodoro'}>Pomodoros</TabsTrigger>
-            <TabsTrigger value="shortBreak" disabled={isRunning && mode !== 'shortBreak'}>Short Break</TabsTrigger>
-            <TabsTrigger value="longBreak" disabled={isRunning && mode !== 'longBreak'}>Long Break</TabsTrigger>
+            <TabsTrigger value="pomodoro" disabled={isRunning && mode !== 'pomodoro'} className="rounded-full">Pomodoros</TabsTrigger>
+            <TabsTrigger value="shortBreak" disabled={isRunning && mode !== 'shortBreak'} className="rounded-full">Short Break</TabsTrigger>
+            <TabsTrigger value="longBreak" disabled={isRunning && mode !== 'longBreak'} className="rounded-full">Long Break</TabsTrigger>
           </TabsList>
           <TabsContent value="pomodoro" className="mt-0"></TabsContent>
           <TabsContent value="shortBreak" className="mt-0"></TabsContent>

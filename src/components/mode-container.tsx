@@ -5,7 +5,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { AmbientMode } from "@/components/ambient-mode";
 import { HomeMode } from "@/components/home-mode";
 import { Focus, Home, Lamp } from "lucide-react";
-import { Tooltip, TooltipContent, TooltipTrigger } from "./ui/tooltip";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 
 
 export function ModeContainer() {
